@@ -13,7 +13,8 @@ import java.util.Scanner;
  * @author jared
  */
 public class BaseRadioServerInterface {
-
+    private static double FREQ = 103.3;
+    private static String converter = "";
     private static final int PORT = 8080;
     private static final String BUTTON_CODE = 
 "<a href=\"~\" class=\"btn\">`</a>\n";
@@ -52,9 +53,28 @@ public class BaseRadioServerInterface {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
+        if(args.length == 1) {
+            try{
+                double fr = Double.parseDouble(args[0]);
+                //make sure it's a legal US frequency.
+                if((fr < 107.9) && (fr > 87.9)) {
+                    FREQ = fr;
+                }
+            }catch(Exception e) {
+                System.err.println("Invalid Args! Enter a double between 87.5 and 108.0");
+            }
+        }
+        try{
+            if(!checkForConverter()) {
+                System.err.println("Error - cannot find a supported converter.");
+                System.exit(1);
+            }
+        }catch(Exception e) {
+            //this should not really happen...
+        }
         songs = new ArrayList<>();
-        songs.add("Hello World");
-        songs.add("123");
+        songs.add("Start");
+        songs.add("Stop");
         Thread run = new Thread(new Runnable() {
 
             @Override
@@ -108,8 +128,11 @@ public class BaseRadioServerInterface {
                 }
                 
                 //deal with command inputs! Yay!
-                if(path.equals("123")) {
-                    System.out.println("Yay!");
+                if(path.equalsIgnoreCase("start")) {
+                    doMusic("star-wars.wav");
+                }
+                if(path.equalsIgnoreCase("stop")) {
+                    stopMusic();
                 }
                 
                 String output = "";
@@ -152,5 +175,39 @@ from the path that we specified in the initial redirect link that we click.
                 accept.close();
             }
         }
+    }
+    /** checkForConverter
+     * 
+     * Checks to see if a converter is available to convert the audio.
+     * 
+     * Currently only checks for avconv since that's all that runs on the pi,
+     * I don't think I can get ffmpeg for it, besides from source.
+     * 
+     * @return If a conversion tool exists, returns true and sets the variable with the prefered software.
+     */
+    private static boolean checkForConverter() throws IOException, InterruptedException {
+        ProcessBuilder build = new ProcessBuilder("avconv");
+        Process start = build.start();
+        Scanner reader = new Scanner(start.getErrorStream());
+        String parse = "";
+        if(reader.hasNextLine()) {
+            parse =  reader.nextLine();
+        }
+        System.out.println(parse);
+        if(parse.contains("avconv")) {
+            converter = "avconv";
+            return true;
+        }
+        return false;
+    }
+    
+    private static void doMusic(String path) throws IOException {
+        ProcessBuilder songPlayer = new ProcessBuilder("avconv -i '" + path + "' -ac 1 -ar 22050 -b 352k -f wav - | sudo ./pifm - " + FREQ);
+        songPlayer.start();
+    }
+    
+    private static void stopMusic() throws IOException {
+        ProcessBuilder songStopper = new ProcessBuilder("pkill avconv");
+        songStopper.start();
     }
 }
