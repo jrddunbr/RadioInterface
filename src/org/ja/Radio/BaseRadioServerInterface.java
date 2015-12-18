@@ -14,13 +14,23 @@ import java.util.Scanner;
  */
 public class BaseRadioServerInterface {
 
-    private static final int port = 80;
-    private static int number;
-    private static final String buttonCode = "<form action=\".\" method=\"get\">\n" +
+    private static final int PORT = 8080;
+    private static final String BUTTON_CODE = "<form action=\".\" method=\"get\">\n" +
 "            <input type=\"hidden\" name=\" \" value=\"`\"><br>\n" +
 "            <input type=\"submit\" value=\"~\" id=\"submit\">\n" +
 "        </form>\n";
     private static ArrayList<String> songs;
+    private static final String BASE_MESSAGE = "<!DOCTYPE html>\n" +
+"<html>\n" +
+"    <head>\n" +
+"        <meta charset=\"UTF-8\">\n" +
+"        <title></title>\n" +
+"<style type=\"text/css\">#submit {width:120px; height:120px; border:none;background:blue;color:white}</style>" +                        
+"    </head>\n" +
+"    <body>\n" + "~" +
+"    </body>\n" +
+"</html>\n";
+    private static final String ROOT_RESPONSE_URL = "/?+=";
     
     /** Main
      * 
@@ -35,7 +45,7 @@ public class BaseRadioServerInterface {
             public void run() {
                 while(true) {
                     try{
-                        runHTTP(port);
+                        runHTTP(PORT);
                     }catch(Exception e) {
                         e.printStackTrace();
                     }
@@ -64,6 +74,7 @@ public class BaseRadioServerInterface {
             Scanner in = new Scanner(accept.getInputStream());
             PrintStream out = new PrintStream(accept.getOutputStream());
             String command = "";
+            String response = "";
             if(in.hasNextLine()) {
                 command = in.nextLine();
             }
@@ -75,39 +86,31 @@ public class BaseRadioServerInterface {
                 String path = command.substring(command.indexOf(" ") + 1, command.indexOf(" ", command.indexOf(" ") + 1));
                 System.out.println(mode + " " + path);
                 
-                if(path.equals("/?+=1")) {
-                    number++;
-                }else if(path.equals("/?+=-1")) {
-                    number--;
-                }else{
-                    
+                if(path.equals(ROOT_RESPONSE_URL + "")) {
+                    //what to do with that url
                 }
                 
-                String message = 
-"<!DOCTYPE html>\n" +
-"<html>\n" +
-"    <head>\n" +
-"        <meta charset=\"UTF-8\">\n" +
-"        <title></title>\n" +
-"<style type=\"text/css\">#submit {width:120px; height:120px; border:none;background:blue;color:white}</style>" +                        
-"    </head>\n" +
-"    <body>\n" + "~" +
-"    </body>\n" +
-"</html>\n";
-                String songs = "";
-                if(number > 0) {
-                    for(int i = 0; i < number; i++) {
-                        songs += "<div>" + (i + 1) + "</div>";
-                    }
-                }
-                message = message.replaceAll("~", songs);
+                response = response.replaceAll("~", "");
+                
+                /* 
+If we are in the root action directory (or approved directory),
+then return some info, otherwise do a 302 redirect to known territory
+
+Typically we leave known territory when making requests, and they
+bump us right back to the root thanks to the 302. The browser gives us the
+ability to collect data thanks to the redirect since it calls a function
+from the path that we specified in the initial redirect link that we click.
+                */
                 if(path.equals("/")) {
                     out.println("HTTP/1.1 200 OK");
-                out.println("Connection: close");
-                out.println("Content-Type: text/html");
-                out.println("Content-Length: " + message.length());
-                out.println();
-                out.println(message);
+                    out.println("Connection: close");
+                    out.println("Content-Type: text/html");
+                    out.println("Content-Length: " + response.length());
+                    out.println();
+                    out.println(response);
+                }else if(path.equals("/favicon.ico")) {
+                    //well browsers like to get favicons so let's just not.
+                    out.println("HTTP/1.1 400 NOT FOUND");
                 }else{
                     out.println("HTTP/1.1 302 Found");
                     out.println("Location: /");
