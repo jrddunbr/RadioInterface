@@ -17,7 +17,7 @@ public class BaseRadioServerInterface {
 
     private static double FREQ = 103.3;
     private static String converter = "";
-    private static final int PORT = 8080;
+    private static final int PORT = 80;
     private static final String BUTTON_CODE
             = "<a href=\"~\" class=\"btn\">`</a>\n";
     //button code from http://css3buttongenerator.com/
@@ -149,6 +149,10 @@ public class BaseRadioServerInterface {
                         e.printStackTrace();
                     }
                 }
+                
+                if (path.equalsIgnoreCase("refresh")) {
+                    findMusic();
+                }
 
                 String output = "";
 
@@ -158,6 +162,7 @@ public class BaseRadioServerInterface {
                 }
 
                 output += BUTTON_CODE.replaceAll("~", "stop").replaceAll("`", "stop");
+                output += BUTTON_CODE.replaceAll("~", "refresh").replaceAll("`", "refresh");
 
                 response = response.replaceAll("~", output);
 
