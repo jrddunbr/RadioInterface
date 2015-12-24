@@ -155,10 +155,10 @@ public class BaseRadioServerInterface {
                 }
 
                 String output = "";
-
                 for (String a : songs) {
                     //I found not to use | for this. It gets nasty.. ` and ~ work though just fine!
                     output += BUTTON_CODE.replaceAll("~", a).replaceAll("`", a);
+                    output += "<br/><br/><br/>";
                 }
 
                 output += BUTTON_CODE.replaceAll("~", "stop").replaceAll("`", "stop");
